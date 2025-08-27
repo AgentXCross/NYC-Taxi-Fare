@@ -1,0 +1,10 @@
+streamlit
+lightgbm
+pandas
+numpy
+scikit-learn
+typing_extensions
+watchdog
+joblib
+streamlit-folium
+folium
