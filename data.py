@@ -1,8 +1,8 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
 import random
 from features import apply_features
 
+#Data type for each column
 dtypes = {
     'fare_amount': 'float32',
     'pickup_longitude': 'float32',
@@ -11,15 +11,19 @@ dtypes = {
     'dropoff_latitude': 'float32',
     'passenger_count': 'uint8'
 }
-sample_fraction = 0.1
+
+#Only extract 50 percent of the data
+sample_fraction = 0.5
 random.seed(42)
 def skip_row(row_index):
+    """Function for only pulling part of the dataset as the data set is very large"""
     if row_index == 0:
         return False
     return random.random() > sample_fraction
 random.seed(42)
 
-def load_data(train_path, test_path):
+def load_data(train_path):
+    """Loads training data. Only used when model hyperparameters are optimized."""
     df = pd.read_csv(
         train_path, 
         parse_dates = ['pickup_datetime'], 
@@ -30,9 +34,7 @@ def load_data(train_path, test_path):
     #Apply Feature Engineering
     df = apply_features(df)
 
-    #Split training data and get useful columns
-    train_df, valid_df = train_test_split(df, test_size = 0.2, random_state = 42)
-
+    #Column Spliting
     numeric_cols = [
     'year', 'passenger_count',
     'is_weekend', 'is_night', 'rush_hour',
@@ -41,13 +43,13 @@ def load_data(train_path, test_path):
     'met_drop_distance', 'wtc_drop_distance', 'trip_crosses_manhattan',
     'is_short_trip', 'is_long_trip', 'min_landmark_distance', 'rush_hour_x_distance',
     'cross_manhattan_x_distance', 'weekend_x_distance'
-]
+    ]
 
     categorical_cols = ['month', 'quarter', 'day_of_month', 'day_of_week', 'hour', 'week']
 
     target_cols = ['fare_amount']
 
-    #Remove values that don't make sense
+    #Remove values that don't make sense from the dataframe
     df = df.loc[
         df['fare_amount'].between(0, 200) &
         df['passenger_count'].between(1, 6) &
@@ -62,15 +64,8 @@ def load_data(train_path, test_path):
         (df['pickup_longitude'] == df['dropoff_longitude'])
     )]
 
-    #Extract only needed columns from training and validation dataframe
-    X_train = train_df[categorical_cols + numeric_cols]
-    y_train = train_df[target_cols]
-    X_valid = valid_df[categorical_cols + numeric_cols]
-    y_valid = valid_df[target_cols]
+    #Extract only needed columns from training dataframe
+    X_train = df[categorical_cols + numeric_cols]
+    y_train = df[target_cols]
 
-    #Apply same transformations to testing set
-    test_df = pd.read_csv(test_path, parse_dates = ['pickup_datetime'], date_format = '%Y-%m-%d %H:%M:%S %Z', dtype = dtypes)
-    test_df = apply_features(test_df)
-    X_test = test_df[categorical_cols + numeric_cols]
-
-    return X_train, y_train, X_valid, y_valid, X_test, categorical_cols
+    return X_train, y_train, categorical_cols

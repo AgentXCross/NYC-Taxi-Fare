@@ -5,37 +5,39 @@ from sklearn.metrics import mean_squared_error
 def rmse(y_true, y_pred):
     return mean_squared_error(y_true, y_pred) ** 0.5
 
-def train_model(X_train, y_train, X_valid, y_valid):
-    categorical_cols = ['month', 'quarter', 'day_of_month', 'day_of_week', 'hour', 'week']
+def train_model(X_train, y_train, categorical_cols):
+    params = {
+        "objective": "regression",
+        "boosting_type": 'gbdt',
+        "metric": "rmse",
+        "learning_rate": 0.05,
+        "num_leaves": 127,
+        "feature_fraction": 0.5,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 5,
+        "min_data_in_leaf": 45,
+        "lambda_l1": 0.5,
+        "lambda_l2": 0.5,
+        "verbose": -1,
+        'min_gain_to_split': 0.01,
+        'max_depth': 10
+    }
 
     model = LGBMRegressor(
-        boosting_type = 'gbdt',
-        objective = 'regression',
-        metric = 'rmse',
-        n_estimators = 500,
-        learning_rate = 0.1,
-        num_leaves = 31,
-        max_depth = -1,
-        subsample = 0.8,
-        colsample_bytree = 0.8,
-        random_state = 42,
-        n_jobs = -1,
-        min_split_gain = 0.5,
-        min_child_weight = 1,
-        min_child_samples = 10
+        **params,
+        n_estimators = 420, 
+        n_jobs = -1, 
+        random_state = 77
     )
 
     model.fit(
         X_train, y_train,
-        eval_set = [(X_valid, y_valid)],
-        eval_metric = 'rmse',
-        categorical_feature = categorical_cols,
+        categorical_feature = categorical_cols
     )
 
-    print("Validation RMSE:", rmse(y_valid, model.predict(X_valid)))
-    joblib.dump(model, "best_model.pkl")
+    joblib.dump(model, "lgbm_model.pkl")
     joblib.dump(X_train.columns.tolist(), "feature_names.pkl")
     return model
 
-def load_model(path = "best_model.pkl"):
+def load_model(path = "lgbm_model.pkl"):
     return joblib.load(path)
